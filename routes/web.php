@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::resource('/configure', \App\Http\Controllers\ConfigController::class)->only(['index', 'store']);
+
 Route::get('/', function () {
     return view('welcome');
 });
