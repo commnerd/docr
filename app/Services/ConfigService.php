@@ -8,5 +8,6 @@ class ConfigService extends BaseService
     {
         EnvBuilder::run();
         DBBuilder::run();
+        
     }
 }
