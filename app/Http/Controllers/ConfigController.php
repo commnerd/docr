@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+// Laravel imports
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 
-use App\Services\ConfigService;
+// Project imports
+use App\Models\Setting;
+use App\Models\User;
 
 class ConfigController extends Controller
 {
@@ -32,11 +36,16 @@ class ConfigController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
-            'db_type' => 'required|string|in:sqlite,mysql,pgsql',
+            'database.default' => 'required|string|connects|in:sqlite,mysql,pgsql',
         ]);
 
+        Artisan::call('migrate');
 
-        ConfigService::run();
+        foreach($request->all() as $key => $val) {
+            if(Config::hasKey($key)) {
+                Setting::set($key, $val);
+            }
+        }        
 
         return redirect('/');
     }

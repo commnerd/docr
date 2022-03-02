@@ -6,15 +6,23 @@ namespace App\Http\Middleware;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Encryption\Encrypter;
 use Illuminate\Http\Request;
 use Closure;
 
 // Project imports
+use App\Traits\ConfigurationCheckerTrait;
+use App\Traits\EncryptionGeneratorTrait;
 use App\Models\Setting;
+use App\Models\User;
 
 class DataSource
 {
+
+    use ConfigurationCheckerTrait;
+    use EncryptionGeneratorTrait;
+
+    private $encryptionKey = null;
+
     /**
      * Handle an incoming request.
      *
@@ -24,13 +32,17 @@ class DataSource
      */
     public function handle(Request $request, Closure $next)
     {
-        $this->configure();
+        if(!$this->configured() && $request->is('configure*')) {
+            return $next($request);
+        }
 
         $dbType = Setting::get("database.default") || "sqlite";
-        Config::set('app.key', $this->getEncryptionKey());
         Config::set("database.default", $dbType);
         Config::set("telescope.storage.database.connection", $dbType);
+        Config::set("app.key", Setting::get("app.key"));
 
+        $this->configure();        
+        
         try {
             foreach(Setting::all() as $key => $val) {
                 Config::set($key, $val);
@@ -41,13 +53,6 @@ class DataSource
         }
         
         return $next($request);
-    }
-
-    private function getEncryptionKey(): string
-    {
-        return 'base64:'.base64_encode(
-            Encrypter::generateKey(Config::get('app.cipher'))
-        );
     }
 
     private function configure(): void
@@ -65,14 +70,12 @@ class DataSource
     {
         Artisan::call("migrate --force");
 
-        $encryptionKey = $this->getEncryptionKey();
-
         Setting::create([
             'key' => 'app.key',
-            'value' => $encryptionKey
+            'value' => $this->encryptionKey
         ]);
 
-        Config::set('app.key', $encryptionKey);
+        Config::set('app.key', $this->encryptionKey);
     }
 
     private function isDbInitialized(): bool
