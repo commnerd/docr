@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+// Laravel imports
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 
-use App\Services\ConfigService;
+// Project imports
+use App\Models\Setting;
+use App\Models\User;
 
 class ConfigController extends Controller
 {
@@ -28,15 +33,28 @@ class ConfigController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $this->validate($request, [
+        $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
-            'db_type' => 'required|string|in:sqlite,mysql,pgsql',
+            'database_default' => 'required|string|connects|in:sqlite,mysql,pgsql',
         ]);
+       
+        Artisan::call('migrate --force');
 
+        foreach($request->all() as $key => $val) {
+            if(Config::get(str_replace('_', '.', $key))) {
+                Setting::set(str_replace('_', '.', $key), $val);
+            }
+        }
 
-        ConfigService::run();
+        Setting::set('app.key', Config::get('app.key'));
+
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+        ]);
 
         return redirect('/');
     }

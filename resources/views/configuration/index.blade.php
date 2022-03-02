@@ -22,11 +22,12 @@
         @include('templates.html.forms.password_input')
         @include('templates.html.forms.select', [
             'field' => [
-                'name' => 'db_type',
+                'name' => 'database.default',
                 'label' => 'Database Type',
                 'value' => '',
                 'options' => [
                     'sqlite' => 'SQLite',
+                    'mysql' => 'MySQL',
                 ],
             ],
         ])

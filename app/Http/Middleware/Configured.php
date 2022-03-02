@@ -10,10 +10,14 @@ use Illuminate\Http\Request;
 use Closure;
 
 // Project imports
+use App\Traits\ConfigurationCheckerTrait;
+use App\Models\Setting;
 use App\Models\User;
 
 class Configured
 {
+    use ConfigurationCheckerTrait;
+    
     /**
      * Handle an incoming request.
      *
@@ -23,10 +27,7 @@ class Configured
      */
     public function handle(Request $request, Closure $next)
     {
-        if(!$this->configured()) {
-            if($request->is('configure*')) {
-                return $next($request);
-            }
+        if(!$this->configured() && !$request->is('configure*')) {
             return redirect()->route('configure.index');
         }
 
@@ -35,13 +36,5 @@ class Configured
         }
 
         return $next($request);
-    }
-
-    private function configured(): bool {
-        $sqlitePath = Config::get("database.connections.sqlite.database");
-        if(!file_exists($sqlitePath) || !Schema::hasTable("settings")) {
-            return false;
-        }
-        return true;
     }
 }
