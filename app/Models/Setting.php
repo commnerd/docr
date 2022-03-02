@@ -9,9 +9,14 @@ class Setting extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'key',
+        'value',
+    ];
+
     public static function get(string $key): string
     {
-        return self::where('key', $key)->first();
+        return self::where('key', $key)->first() ?? "";
     }
 
     public static function set(string $key, string $value): void

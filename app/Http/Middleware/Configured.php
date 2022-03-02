@@ -2,10 +2,15 @@
 
 namespace App\Http\Middleware;
 
+// Laravel imports
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Http\Request;
-use App\Models\User;
 use Closure;
+
+// Project imports
+use App\Models\User;
 
 class Configured
 {
@@ -18,7 +23,10 @@ class Configured
      */
     public function handle(Request $request, Closure $next)
     {
-        if(!$this->configured() && !$request->is('configure*')) {
+        if(!$this->configured()) {
+            if($request->is('configure*')) {
+                return $next($request);
+            }
             return redirect()->route('configure.index');
         }
 
@@ -30,15 +38,10 @@ class Configured
     }
 
     private function configured(): bool {
-        try {
-            if(User::count() <= 0) {
-                return false;
-            }
-        }
-        catch (QueryException $e) {
+        $sqlitePath = Config::get("database.connections.sqlite.database");
+        if(!file_exists($sqlitePath) || !Schema::hasTable("settings")) {
             return false;
         }
-        
         return true;
     }
 }
